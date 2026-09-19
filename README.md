@@ -1,7 +1,7 @@
-# KERN — AI-First Security Orchestration CLI
+# KERN.open: The AI-First Security Orchestration CLI
 
 > **One command. Three engines. Zero configuration.**
-> Secrets · SAST · SCA — unified, deduplicated, AI-ready.
+> Secrets, SAST and SCA  unified, deduplicated and AI-ready.
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
@@ -13,7 +13,7 @@ npm install -g kern.open
 kern audit .
 ```
 
-KERN wraps **Gitleaks**, **Horusec**, and **Trivy** into a single parallel orchestrator. It auto-downloads all engine binaries, deduplicates findings across engines via the Fusion Engine, and emits either a colour-coded human report or a clean, normalised JSON/SARIF payload — ready for AI agents, CI pipelines, and GitHub Code Scanning.
+KERN wraps **Gitleaks**, **Horusec**, and **Trivy** into a single parallel orchestrator. It auto-downloads all engine binaries, deduplicates findings across engines via the Fusion Engine, and emits either a colour-coded human report or a clean, normalised JSON/SARIF payload,  ready for AI agents, CI pipelines, and GitHub Code Scanning.
 
 ---
 
@@ -46,11 +46,11 @@ KERN is designed to be consumed programmatically. Follow this golden loop on eve
 ### The Golden Loop
 
 ```
-kern doctor          ← run once on a new machine
-kern setup           ← pre-download binaries (eliminates first-run latency)
-kern audit . --json  ← scan; parse result.vulnerable
-fix top issue        ← use result.issues[0] (sorted by confidence + severity)
-kern audit . --json  ← re-scan; confirm fix; repeat
+kern doctor          -> run once on a new machine
+kern setup           -> pre-download binaries (eliminates first-run latency)
+kern audit . --json  -> scan; parse result.vulnerable
+fix top issue        -> use result.issues[0] (sorted by confidence + severity)
+kern audit . --json  -> re-scan; confirm fix; repeat
 ```
 
 ### Minimal Agent Integration (JavaScript)
@@ -69,7 +69,7 @@ function kernAudit(path = ".") {
 const result = kernAudit(".");
 
 if (!result.vulnerable) {
-  console.log("✅ Clean — no findings.");
+  console.log(" Clean! no findings over here");
   process.exit(0);
 }
 
@@ -78,7 +78,7 @@ const real = result.issues.filter(
   (i) => i.type !== "SYSTEM_ERROR" && i.type !== "CONFIG_ERROR",
 );
 
-// Sort: confidence desc → severity desc → file → line
+// Sort: confidence desc - > severity desc -> file > line
 const CONF = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 const SEV = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 };
 real.sort((a, b) => {
@@ -201,7 +201,7 @@ kern audit path/to/file --json
 kern audit .
 ```
 
-Colour-coded terminal output with severity-grouped findings, file locations, descriptions, and suggested fixes. Use this when presenting results to a human developer.
+**Colour-coded** terminal output with severity-grouped findings, file locations, descriptions, and suggested fixes. Use this when presenting results to a human developer.
 
 ### Mode B — JSON
 
@@ -209,7 +209,7 @@ Colour-coded terminal output with severity-grouped findings, file locations, des
 kern audit . --json
 ```
 
-Returns the full normalised JSON object (see [JSON Output Schema](#json-output-schema)). Use this when an AI agent or script is the consumer.
+Returns the **full normalised JSON** object (see [JSON Output Schema](#json-output-schema)). Use this when an AI agent or script is the consumer.
 
 ### Mode C — Silent JSON
 
@@ -259,13 +259,6 @@ Emits a valid SARIF v2.1.0 document to stdout. All progress logs go to stderr. U
 }
 ```
 
-### Confidence Derivation
-
-| Engines that fired | Confidence |
-| ------------------ | ---------- |
-| 3 or more          | `HIGH`     |
-| 2                  | `MEDIUM`   |
-| 1                  | `LOW`      |
 
 ### Special Issue Types
 
@@ -500,7 +493,7 @@ jobs:
           "
 ```
 
-### GitHub Actions — PR Diff Scan (Fast)
+### GitHub Actions - PR Diff Scan (Fast)
 
 ```yaml
 name: KERN PR Diff Scan
@@ -535,7 +528,7 @@ jobs:
           "
 ```
 
-### GitHub Actions — SARIF Upload to Code Scanning
+### GitHub Actions - SARIF Upload to Code Scanning
 
 ```yaml
 name: KERN SARIF Upload
@@ -578,13 +571,13 @@ Save as `.git/hooks/pre-commit` and run `chmod +x .git/hooks/pre-commit`:
 
 ```sh
 #!/bin/sh
-echo "🔍 Running KERN security audit..."
+echo " Running KERN security audit..."
 
 RESULT=$(kern audit . --json --silent 2>/dev/null)
 EXIT=$?
 
 if [ $EXIT -eq 1 ]; then
-  echo "❌ KERN: Security issues found. Commit blocked."
+  echo " KERN: Security issues found. Commit blocked."
   echo "$RESULT" | node -e \
     "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);\
      process.stdin.on('end',()=>{const r=JSON.parse(d);\
@@ -595,57 +588,28 @@ if [ $EXIT -eq 1 ]; then
 fi
 
 if [ $EXIT -eq 2 ]; then
-  echo "⚠️  KERN: Audit failed to run. Check with: kern doctor"
+  echo "  KERN: Audit failed to run. For more info, run: kern doctor"
   exit 1
 fi
 
-echo "✅ KERN: No critical/high issues found."
+echo "KERN: No critical/high issues found."
 ```
 
-**Fast variant (diff only — recommended for large repos):**
+**Fast variant (diff only - recommended for LARGE repos):**
 
 ```sh
 #!/bin/sh
 RESULT=$(kern audit . --diff --json --silent 2>/dev/null)
-[ $? -eq 1 ] && echo "❌ KERN: Issues in modified files." && echo "$RESULT" && exit 1
-echo "✅ KERN diff: clean."
+[ $? -eq 1 ] && echo " KERN: Issues in modified files." && echo "$RESULT" && exit 1
+echo " KERN diff: clean."
 ```
 
 ---
 
 ## kern doctor
 
-Run `kern doctor` whenever KERN behaves unexpectedly or before onboarding a new machine.
+Run `kern doctor` whenever the script behaves unexpectedly or before onboarding a new machine.
 
-```
-🩺  KERN Doctor — Environment Health Check
-════════════════════════════════════════════════════
-
-── Environment ─────────────────────────────────────
-  ✅ Node.js 20.11.0  (required: >=16)
-  ✅ Platform: linux-x64  (supported)
-  ✅ git: git version 2.43.0  (required for --diff mode)
-
-── Global Binary Cache ──────────────────────────────
-  ℹ️  Cache root: /root/.kern/bin
-  ✅ Read/Write access to /root/.kern/bin
-
-── Network / HuggingFace Connectivity ───────────────
-  ✅ Reachable: huggingface.co/datasets/Bob-Potato  (HTTP 200)
-  ✅ Reachable: huggingface.co/datasets/Bob-Potato  (HTTP 200)
-  ✅ Reachable: huggingface.co/datasets/Bob-Potato  (HTTP 200)
-
-── Cached Binary Integrity & Permissions ────────────
-  ✅ gitleaks: binary found at /root/.kern/bin/gitleaks/gitleaks (6.6 MB)
-  ✅ gitleaks: executable permissions ✓
-  ✅ horusec: binary found at /root/.kern/bin/horusec/horusec_linux_amd64 (21.0 MB)
-  ✅ horusec: executable permissions ✓
-  ✅ trivy: binary found at /root/.kern/bin/trivy/trivy (126.0 MB)
-  ✅ trivy: executable permissions ✓
-
-════════════════════════════════════════════════════
-Done. Fix any ❌ items above before running kern audit.
-```
 
 ### When to Run
 
@@ -736,3 +700,4 @@ kern.open/
 ---
 
 _Developed by **Preister Group** — KERN v1.0.0_
+_Contact BobPotat0 if you have any issues_
